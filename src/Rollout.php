@@ -124,7 +124,7 @@ class Rollout
      * @param array $requestParameters
      * @return bool
      */
-    public function isActive($feature, RolloutUserInterface $user = null, array $requestParameters = array())
+    public function isActive($feature, ?RolloutUserInterface $user = null, array $requestParameters = array())
     {
         $feature = $this->get($feature);
 
@@ -186,7 +186,7 @@ class Rollout
      * @param RolloutUserInterface|null $user
      * @return bool
      */
-    public function isActiveInGroup($group, RolloutUserInterface $user = null)
+    public function isActiveInGroup($group, ?RolloutUserInterface $user = null)
     {
         if (!isset($this->groups[$group])) {
             return false;

@@ -216,7 +216,7 @@ class Feature
      * @param array $requestParameters
      * @return bool
      */
-    public function isActive(Rollout $rollout, RolloutUserInterface $user = null, array $requestParameters = array())
+    public function isActive(Rollout $rollout, ?RolloutUserInterface $user = null, array $requestParameters = array())
     {
         if (null == $user) {
             return $this->isParamInRequestParams($requestParameters)
@@ -281,7 +281,7 @@ class Feature
      * @param RolloutUserInterface|null $user
      * @return bool
      */
-    private function isInActiveGroup(Rollout $rollout, RolloutUserInterface $user = null)
+    private function isInActiveGroup(Rollout $rollout, ?RolloutUserInterface $user = null)
     {
         foreach ($this->groups as $group) {
             if ($rollout->isActiveInGroup($group, $user)) {
