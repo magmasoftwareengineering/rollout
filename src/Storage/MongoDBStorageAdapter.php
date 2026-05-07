@@ -1,6 +1,6 @@
 <?php
 
-namespace Opensoft\Rollout\Storage;
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 /**
  * Storage adapter using MongoDB

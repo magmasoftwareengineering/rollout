@@ -3,7 +3,7 @@
  * 
  */
 
-namespace Opensoft\Rollout\Storage;
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>

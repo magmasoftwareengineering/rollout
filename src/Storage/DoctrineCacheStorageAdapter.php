@@ -3,7 +3,7 @@
  * 
  */
 
-namespace Opensoft\Rollout\Storage;
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 use Doctrine\Common\Cache\Cache;
 

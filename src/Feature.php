@@ -3,7 +3,7 @@
  *
  */
 
-namespace Opensoft\Rollout;
+namespace MagmaSoftwareEngineering\Rollout;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>

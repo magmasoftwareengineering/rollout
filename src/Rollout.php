@@ -3,9 +3,9 @@
  *
  */
 
-namespace Opensoft\Rollout;
+namespace MagmaSoftwareEngineering\Rollout;
 
-use Opensoft\Rollout\Storage\StorageInterface;
+use MagmaSoftwareEngineering\Rollout\Storage\StorageInterface;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
