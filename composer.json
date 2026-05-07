@@ -1,29 +1,64 @@
 {
-    "name": "opensoft/rollout",
-    "description": "Feature switches or flags for PHP",
-    "keywords": ["feature", "flag", "toggle", "rollout", "flipper", "switches"],
+    "name": "magmasoftwareengineering/rollout",
+    "description": "Feature switches/flags for PHP — maintained successor to opensoft/rollout",
+    "keywords": ["feature", "flag", "toggle", "rollout", "flipper", "switches", "feature-flags"],
     "license": "MIT",
+    "type": "library",
+    "minimum-stability": "stable",
     "authors": [
         {
             "name": "Richard Fullmer",
-            "email": "richard.fullmer@opensoftdev.com"
+            "email": "richard.fullmer@opensoftdev.com",
+            "role": "Original author"
+        },
+        {
+            "name": "Jeremy Coates",
+            "email": "hello@phpcodemonkey.me.uk",
+            "role": "Maintainer"
         }
     ],
     "require": {
-        "php": ">=5.3.3"
-    },
-    "suggest": {
-        "doctrine/cache": "For use with the DoctrineCacheStorageAdapter",
-        "predis/predis": "For use with the RedisStorageAdapter"
+        "php": ">=8.3 || >=8.5"
     },
     "require-dev": {
-        "doctrine/cache": "*",
-        "phpunit/phpunit": ">=4.0,<6.0"
+        "codeception/codeception": "^5.3",
+        "codeception/module-asserts": "^3.3",
+        "doctrine/cache": "^2.2",
+        "mongodb/mongodb": "^1.20",
+        "predis/predis": "^2.3",
+        "psr/simple-cache": "^3.0",
+        "roave/security-advisories": "dev-latest",
+        "vimeo/psalm": "^6.0"
+    },
+    "suggest": {
+        "doctrine/cache": "For DoctrineCacheStorageAdapter (deprecated; prefer PSR-16)",
+        "ext-mongodb": "For MongoDBStorageAdapter",
+        "ext-pdo": "For PDOStorageAdapter",
+        "ext-redis": "For RedisStorageAdapter (alternatively use predis/predis)",
+        "mongodb/mongodb": "Higher-level driver for MongoDBStorageAdapter",
+        "predis/predis": "Pure-PHP Redis client for RedisStorageAdapter",
+        "psr/simple-cache": "For Psr16StorageAdapter (any PSR-16 cache implementation)"
     },
     "autoload": {
         "psr-4": {
-            "Opensoft\\Rollout\\": "src/"
+            "MagmaSoftwareEngineering\\Rollout\\": "src/"
+        },
+        "files": [
+            "src/legacy_aliases.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MagmaSoftwareEngineering\\Rollout\\Tests\\": "tests/_support/",
+            "MagmaSoftwareEngineering\\Rollout\\Tests\\Unit\\": "tests/Unit/",
+            "MagmaSoftwareEngineering\\Rollout\\Tests\\Integration\\": "tests/Integration/"
         }
     },
-    "minimum-stability": "dev"
+    "config": {
+        "preferred-install": {
+            "*": "dist"
+        },
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
 }
