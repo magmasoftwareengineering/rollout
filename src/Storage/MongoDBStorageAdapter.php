@@ -4,51 +4,55 @@ declare(strict_types=1);
 
 namespace MagmaSoftwareEngineering\Rollout\Storage;
 
+use MongoDB\Collection;
+
 /**
- * Storage adapter using MongoDB.
+ * Storage adapter using MongoDB via the modern mongodb/mongodb library
+ * and ext-mongodb.
  *
- * NOTE: This adapter currently retains the legacy ext-mongo / wire-shape
- * implementation from upstream opensoft/rollout. A rewrite for ext-mongodb
- * (the modern replacement) is scheduled for a follow-up commit in this 3.0
- * series. Until then, this adapter is unlikely to function on PHP 8.3+.
+ * Construct with a fully-resolved {@see \MongoDB\Collection}; the adapter
+ * stores each feature as a single document keyed by `name`:
  *
- * @author James Hrisho <@securingsincity>
+ *     { name: "feature:chat", value: "<serialised payload>" }
+ *
+ * Suggested setup:
+ *
+ *     $client = new \MongoDB\Client('mongodb://localhost:27017');
+ *     $collection = $client->selectCollection('app', 'rollout_feature');
+ *     $storage = new MongoDBStorageAdapter($collection);
+ *
+ * @author James Hrisho <@securingsincity> (original ext-mongo implementation)
+ * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 ext-mongodb rewrite)
  */
 class MongoDBStorageAdapter implements StorageInterface
 {
-    private readonly string $collection;
-
-    public function __construct(
-        private readonly object $mongo,
-        ?string $collection = null,
-    ) {
-        $this->collection = $collection ?? 'rollout_feature';
-    }
+    public function __construct(private readonly Collection $collection) {}
 
     public function getCollectionName(): string
     {
-        return $this->collection;
+        return $this->collection->getCollectionName();
     }
 
     public function get(string $key): ?string
     {
-        $collection = $this->getCollectionName();
-        /** @psalm-suppress MixedMethodCall, MixedAssignment, MixedPropertyFetch */
-        $result = $this->mongo->$collection->findOne(['name' => $key]);
+        /** @var array{value?: mixed}|null $document */
+        $document = $this->collection->findOne(
+            ['name' => $key],
+            ['typeMap' => ['root' => 'array', 'document' => 'array']],
+        );
 
-        if (!$result) {
+        if ($document === null) {
             return null;
         }
 
-        /** @psalm-suppress MixedArrayAccess */
-        return (string) $result['value'];
+        $value = $document['value'] ?? null;
+
+        return is_string($value) ? $value : null;
     }
 
     public function set(string $key, string $value): void
     {
-        $collection = $this->getCollectionName();
-        /** @psalm-suppress MixedMethodCall, MixedPropertyFetch */
-        $this->mongo->$collection->update(
+        $this->collection->updateOne(
             ['name' => $key],
             ['$set' => ['value' => $value]],
             ['upsert' => true],
@@ -57,8 +61,6 @@ class MongoDBStorageAdapter implements StorageInterface
 
     public function remove(string $key): void
     {
-        $collection = $this->getCollectionName();
-        /** @psalm-suppress MixedMethodCall, MixedPropertyFetch */
-        $this->mongo->$collection->remove(['name' => $key]);
+        $this->collection->deleteOne(['name' => $key]);
     }
 }
