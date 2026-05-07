@@ -1,92 +1,61 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MagmaSoftwareEngineering\Rollout\Storage;
 
+use PDO;
+
 /**
- * Storage adapter using PDO
+ * Storage adapter using PDO.
  *
  * @author Baldur Rensch <brensch@gmail.com>
  */
 class PDOStorageAdapter implements StorageInterface
 {
-    const STMT_SELECT = 'SELECT settings FROM :table WHERE name = :key';
-    const STMT_INSERT = 'INSERT INTO :table (name, settings) VALUES (:key, :value)';
-    const STMT_UPDATE = 'UPDATE :table SET settings = :value WHERE name = :key';
-    const STMT_DELETE = 'DELETE FROM :table WHERE name = :key';
+    private const STMT_SELECT = 'SELECT settings FROM :table WHERE name = :key';
+    private const STMT_INSERT = 'INSERT INTO :table (name, settings) VALUES (:key, :value)';
+    private const STMT_UPDATE = 'UPDATE :table SET settings = :value WHERE name = :key';
+    private const STMT_DELETE = 'DELETE FROM :table WHERE name = :key';
 
-    /**
-     * @var \PDO
-     */
-    private $pdoConnection;
+    public function __construct(
+        private readonly PDO $pdoConnection,
+        private readonly string $tableName = 'rollout_feature',
+    ) {}
 
-    /**
-     * @var string
-     */
-    private $tableName;
-
-    public function __construct(\PDO $pdoConnection, $tableName = 'rollout_feature')
-    {
-        $this->pdoConnection = $pdoConnection;
-        $this->tableName = $tableName;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get($key)
+    public function get(string $key): ?string
     {
         $statement = $this->pdoConnection->prepare($this->getSQLStatement(self::STMT_SELECT));
-
-        $statement->bindParam('key', $key);
-        $statement->setFetchMode(\PDO::FETCH_ASSOC);
-
+        $statement->bindParam(':key', $key);
+        $statement->setFetchMode(PDO::FETCH_ASSOC);
         $statement->execute();
 
         $result = $statement->fetch();
-
-        if (false === $result) {
+        if ($result === false) {
             return null;
         }
 
-        return $result['settings'];
+        return (string) $result['settings'];
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function set($key, $value)
+    public function set(string $key, string $value): void
     {
-        if (null === $this->get($key)) {
-            $sql = self::STMT_INSERT;
-        } else {
-            $sql = self::STMT_UPDATE;
-        }
+        $sql = $this->get($key) === null ? self::STMT_INSERT : self::STMT_UPDATE;
 
         $statement = $this->pdoConnection->prepare($this->getSQLStatement($sql));
-
-        $statement->bindParam('key', $key);
-        $statement->bindParam('value', $value);
-
+        $statement->bindParam(':key', $key);
+        $statement->bindParam(':value', $value);
         $statement->execute();
     }
 
-    /**
-     * @param string $key
-     */
-    public function remove($key)
+    public function remove(string $key): void
     {
         $statement = $this->pdoConnection->prepare($this->getSQLStatement(self::STMT_DELETE));
-
-        $statement->bindParam('key', $key);
+        $statement->bindParam(':key', $key);
         $statement->execute();
     }
 
-    /**
-     * @param string $sql
-     *
-     * @return string
-     */
-    private function getSQLStatement($sql)
+    private function getSQLStatement(string $sql): string
     {
         return str_replace(':table', $this->tableName, $sql);
     }

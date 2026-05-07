@@ -1,55 +1,40 @@
 <?php
-/**
- * 
- */
+
+declare(strict_types=1);
 
 namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 use Doctrine\Common\Cache\Cache;
 
 /**
- * Use any available doctrine/cache Cache implementation
+ * Use any available doctrine/cache Cache implementation.
+ *
+ * @deprecated since 3.0 — doctrine/cache itself is deprecated upstream.
+ *             Migrate to {@see Psr16StorageAdapter} (PSR-16 SimpleCache),
+ *             which works with most modern cache libraries including
+ *             symfony/cache, cache/cache, and laminas/laminas-cache.
+ *             This adapter will be removed in 4.0.
  *
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  */
 class DoctrineCacheStorageAdapter implements StorageInterface
 {
-    /**
-     * @var Cache
-     */
-    private $cache;
+    public function __construct(private readonly Cache $cache) {}
 
-    /**
-     * @param Cache $cache
-     */
-    public function __construct(Cache $cache)
+    public function get(string $key): ?string
     {
-        $this->cache = $cache;
+        $value = $this->cache->fetch($key);
+
+        return $value === false ? null : (string) $value;
     }
 
-    /**
-     * @param  string $key
-     * @return mixed|null Null if the value is not found
-     */
-    public function get($key)
-    {
-        return $this->cache->fetch($key);
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value)
+    public function set(string $key, string $value): void
     {
         $this->cache->save($key, $value);
     }
 
-    /**
-     * @param string $key
-     */
-    public function remove($key)
+    public function remove(string $key): void
     {
         $this->cache->delete($key);
     }
-} 
+}

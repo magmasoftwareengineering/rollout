@@ -1,7 +1,6 @@
 <?php
-/**
- * 
- */
+
+declare(strict_types=1);
 
 namespace MagmaSoftwareEngineering\Rollout\Storage;
 
@@ -10,36 +9,21 @@ namespace MagmaSoftwareEngineering\Rollout\Storage;
  */
 class ArrayStorage implements StorageInterface
 {
-    /**
-     * @var array
-     */
-    private $storage = array();
+    /** @var array<string, string> */
+    private array $storage = [];
 
-    /**
-     * @param string $key
-     * @return mixed|null
-     */
-    public function get($key)
+    public function get(string $key): ?string
     {
-        return isset($this->storage[$key]) ? $this->storage[$key] : null;
+        return $this->storage[$key] ?? null;
     }
 
-    /**
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value)
+    public function set(string $key, string $value): void
     {
         $this->storage[$key] = $value;
     }
 
-    /**
-     * @param string $key
-     */
-    public function remove($key)
+    public function remove(string $key): void
     {
-        if (isset($this->storage[$key])) {
-            unset($this->storage[$key]);
-        }
+        unset($this->storage[$key]);
     }
-} 
+}
