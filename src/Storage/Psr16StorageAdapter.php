@@ -26,6 +26,7 @@ class Psr16StorageAdapter implements StorageInterface
 {
     public function __construct(private readonly CacheInterface $cache) {}
 
+    #[\Override]
     public function get(string $key): ?string
     {
         /** @var mixed $value */
@@ -34,11 +35,13 @@ class Psr16StorageAdapter implements StorageInterface
         return is_string($value) ? $value : null;
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $this->cache->set($key, $value);
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         $this->cache->delete($key);

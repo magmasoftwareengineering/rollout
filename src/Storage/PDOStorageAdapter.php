@@ -23,6 +23,7 @@ class PDOStorageAdapter implements StorageInterface
         private readonly string $tableName = 'rollout_feature',
     ) {}
 
+    #[\Override]
     public function get(string $key): ?string
     {
         $statement = $this->pdoConnection->prepare($this->getSQLStatement(self::STMT_SELECT));
@@ -38,6 +39,7 @@ class PDOStorageAdapter implements StorageInterface
         return (string) $result['settings'];
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $sql = $this->get($key) === null ? self::STMT_INSERT : self::STMT_UPDATE;
@@ -48,6 +50,7 @@ class PDOStorageAdapter implements StorageInterface
         $statement->execute();
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         $statement = $this->pdoConnection->prepare($this->getSQLStatement(self::STMT_DELETE));

@@ -33,6 +33,7 @@ class MongoDBStorageAdapter implements StorageInterface
         return $this->collection->getCollectionName();
     }
 
+    #[\Override]
     public function get(string $key): ?string
     {
         /** @var array{value?: mixed}|null $document */
@@ -50,6 +51,7 @@ class MongoDBStorageAdapter implements StorageInterface
         return is_string($value) ? $value : null;
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $this->collection->updateOne(
@@ -59,6 +61,7 @@ class MongoDBStorageAdapter implements StorageInterface
         );
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         $this->collection->deleteOne(['name' => $key]);

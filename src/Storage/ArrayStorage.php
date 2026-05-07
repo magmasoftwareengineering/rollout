@@ -12,16 +12,19 @@ class ArrayStorage implements StorageInterface
     /** @var array<string, string> */
     private array $storage = [];
 
+    #[\Override]
     public function get(string $key): ?string
     {
         return $this->storage[$key] ?? null;
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $this->storage[$key] = $value;
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         unset($this->storage[$key]);

@@ -21,6 +21,7 @@ class DoctrineCacheStorageAdapter implements StorageInterface
 {
     public function __construct(private readonly Cache $cache) {}
 
+    #[\Override]
     public function get(string $key): ?string
     {
         $value = $this->cache->fetch($key);
@@ -28,11 +29,13 @@ class DoctrineCacheStorageAdapter implements StorageInterface
         return $value === false ? null : (string) $value;
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $this->cache->save($key, $value);
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         $this->cache->delete($key);

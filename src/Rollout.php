@@ -23,6 +23,7 @@ class Rollout implements RolloutInterface
         ];
     }
 
+    #[\Override]
     public function activate(string $feature): void
     {
         $f = $this->get($feature);
@@ -30,6 +31,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function deactivate(string $feature): void
     {
         $f = $this->get($feature);
@@ -37,6 +39,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function activateGroup(string $feature, string $group): void
     {
         $f = $this->get($feature);
@@ -44,6 +47,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function deactivateGroup(string $feature, string $group): void
     {
         $f = $this->get($feature);
@@ -51,6 +55,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function activateUser(string $feature, RolloutUserInterface $user): void
     {
         $f = $this->get($feature);
@@ -58,6 +63,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function deactivateUser(string $feature, RolloutUserInterface $user): void
     {
         $f = $this->get($feature);
@@ -65,6 +71,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function defineGroup(string $group, Closure $closure): void
     {
         $this->groups[$group] = $closure;
@@ -73,11 +80,13 @@ class Rollout implements RolloutInterface
     /**
      * @param array<string, mixed> $requestParameters
      */
+    #[\Override]
     public function isActive(string $feature, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
     {
         return $this->get($feature)->isActive($this, $user, $requestParameters);
     }
 
+    #[\Override]
     public function activatePercentage(string $feature, int $percentage): void
     {
         $f = $this->get($feature);
@@ -85,6 +94,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function deactivatePercentage(string $feature): void
     {
         $f = $this->get($feature);
@@ -92,6 +102,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function activateRequestParam(string $feature, string $requestParam): void
     {
         $f = $this->get($feature);
@@ -99,6 +110,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function deactivateRequestParam(string $feature): void
     {
         $f = $this->get($feature);
@@ -106,6 +118,7 @@ class Rollout implements RolloutInterface
         $this->save($f);
     }
 
+    #[\Override]
     public function isActiveInGroup(string $group, ?RolloutUserInterface $user = null): bool
     {
         if (!isset($this->groups[$group])) {
@@ -115,6 +128,7 @@ class Rollout implements RolloutInterface
         return (bool) ($this->groups[$group])($user);
     }
 
+    #[\Override]
     public function get(string $feature): Feature
     {
         $settings = $this->storage->get($this->key($feature));
@@ -132,6 +146,7 @@ class Rollout implements RolloutInterface
     /**
      * Remove a feature definition from rollout.
      */
+    #[\Override]
     public function remove(string $feature): void
     {
         $this->storage->remove($this->key($feature));
@@ -154,6 +169,7 @@ class Rollout implements RolloutInterface
      *
      * @param array<string, mixed> $data
      */
+    #[\Override]
     public function setFeatureData(string $feature, array $data): void
     {
         $f = $this->get($feature);
@@ -164,6 +180,7 @@ class Rollout implements RolloutInterface
     /**
      * Clear all feature data.
      */
+    #[\Override]
     public function clearFeatureData(string $feature): void
     {
         $f = $this->get($feature);
@@ -174,6 +191,7 @@ class Rollout implements RolloutInterface
     /**
      * @return list<string>
      */
+    #[\Override]
     public function features(): array
     {
         $content = $this->storage->get($this->featuresKey());

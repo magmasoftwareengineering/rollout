@@ -29,6 +29,7 @@ class RedisStorageAdapter implements StorageInterface
         $this->group = $group ?? self::DEFAULT_GROUP;
     }
 
+    #[\Override]
     public function get(string $key): ?string
     {
         /** @psalm-suppress MixedAssignment */
@@ -45,11 +46,13 @@ class RedisStorageAdapter implements StorageInterface
         return is_string($decoded) ? $decoded : null;
     }
 
+    #[\Override]
     public function set(string $key, string $value): void
     {
         $this->redis->hset($this->group, $key, json_encode($value));
     }
 
+    #[\Override]
     public function remove(string $key): void
     {
         $this->redis->hdel($this->group, $key);

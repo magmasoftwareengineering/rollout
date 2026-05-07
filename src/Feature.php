@@ -110,26 +110,31 @@ class Feature implements FeatureInterface
         return $out;
     }
 
+    #[\Override]
     public function getName(): string
     {
         return $this->name;
     }
 
+    #[\Override]
     public function setPercentage(int $percentage): void
     {
         $this->percentage = $percentage;
     }
 
+    #[\Override]
     public function getPercentage(): int
     {
         return $this->percentage;
     }
 
+    #[\Override]
     public function serialize(): string
     {
         return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
+    #[\Override]
     public function addUser(RolloutUserInterface $user): void
     {
         $id = $user->getRolloutIdentifier();
@@ -138,6 +143,7 @@ class Feature implements FeatureInterface
         }
     }
 
+    #[\Override]
     public function removeUser(RolloutUserInterface $user): void
     {
         $key = array_search($user->getRolloutIdentifier(), $this->users, true);
@@ -150,11 +156,13 @@ class Feature implements FeatureInterface
     /**
      * @return list<string>
      */
+    #[\Override]
     public function getUsers(): array
     {
         return $this->users;
     }
 
+    #[\Override]
     public function addGroup(string $group): void
     {
         if (!in_array($group, $this->groups, true)) {
@@ -162,6 +170,7 @@ class Feature implements FeatureInterface
         }
     }
 
+    #[\Override]
     public function removeGroup(string $group): void
     {
         $key = array_search($group, $this->groups, true);
@@ -174,16 +183,19 @@ class Feature implements FeatureInterface
     /**
      * @return list<string>
      */
+    #[\Override]
     public function getGroups(): array
     {
         return $this->groups;
     }
 
+    #[\Override]
     public function getRequestParam(): ?string
     {
         return $this->requestParam;
     }
 
+    #[\Override]
     public function setRequestParam(?string $requestParam): void
     {
         $this->requestParam = $requestParam;
@@ -192,6 +204,7 @@ class Feature implements FeatureInterface
     /**
      * @return array<string, mixed>
      */
+    #[\Override]
     public function getData(): array
     {
         return $this->data;
@@ -200,6 +213,7 @@ class Feature implements FeatureInterface
     /**
      * @param array<string, mixed> $data
      */
+    #[\Override]
     public function setData(array $data): void
     {
         $this->data = $data;
@@ -208,6 +222,7 @@ class Feature implements FeatureInterface
     /**
      * Clear the feature of all configuration.
      */
+    #[\Override]
     public function clear(): void
     {
         $this->groups = [];
@@ -220,6 +235,7 @@ class Feature implements FeatureInterface
     /**
      * @param array<string, mixed> $requestParameters
      */
+    #[\Override]
     public function isActive(RolloutInterface $rollout, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
     {
         if ($user === null) {
@@ -237,6 +253,7 @@ class Feature implements FeatureInterface
     /**
      * @return array{percentage: int, groups: list<string>, users: list<string>, requestParam: ?string, data: array<string, mixed>}
      */
+    #[\Override]
     public function toArray(): array
     {
         return [
