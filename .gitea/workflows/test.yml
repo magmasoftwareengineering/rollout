@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+    branches: ['*.x', 'main', 'master', 'feature/**']
+  pull_request:
+    branches: ['*.x', 'main', 'master']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.5']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, mongodb, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Static analysis (Psalm)
+        run: vendor/bin/psalm --no-progress --output-format=github
+
+      - name: Run unit tests
+        run: php -d register_argc_argv=On vendor/bin/codecept run Unit --no-interaction
