@@ -30,16 +30,52 @@ class Feature implements FeatureInterface
             return;
         }
 
+        // Format detection: 3.0+ emits JSON (always starts with '{').
+        // 2.x emitted pipe-delimited records (first segment is the percentage,
+        // i.e. always a digit). Reading both keeps existing storage data
+        // loadable across an upgrade.
+        if ($settings[0] === '{') {
+            $this->loadJsonFormat($settings);
+            return;
+        }
+
+        $this->loadLegacyPipeFormat($settings);
+    }
+
+    private function loadJsonFormat(string $settings): void
+    {
+        $decoded = json_decode($settings, true);
+        if (!is_array($decoded)) {
+            $this->clear();
+            return;
+        }
+
+        $this->percentage = (int) ($decoded['percentage'] ?? 0);
+        $this->users = $this->stringListFromMixed($decoded['users'] ?? null);
+        $this->groups = $this->stringListFromMixed($decoded['groups'] ?? null);
+        $rawRequestParam = $decoded['requestParam'] ?? null;
+        $this->requestParam = is_string($rawRequestParam) && $rawRequestParam !== ''
+            ? $rawRequestParam
+            : null;
+        /** @var mixed $rawData */
+        $rawData = $decoded['data'] ?? null;
+        /** @psalm-suppress MixedAssignment, MixedPropertyTypeCoercion */
+        $this->data = is_array($rawData) ? $rawData : [];
+    }
+
+    private function loadLegacyPipeFormat(string $settings): void
+    {
         $parts = explode('|', $settings);
 
-        if (isset($parts[3])) {
+        if (isset($parts[3]) && $parts[3] !== '') {
             $this->requestParam = $parts[3];
         }
 
-        // Cannot rely on list() destructuring alone because of backwards
-        // compatibility with older serialised payloads that omit later fields.
+        // Older payloads sometimes omit later fields, so we can't rely on a
+        // single list() destructure for the whole array.
         if (isset($parts[4]) && $parts[4] !== '') {
             $decoded = json_decode($parts[4], true);
+            /** @psalm-suppress MixedPropertyTypeCoercion */
             $this->data = is_array($decoded) ? $decoded : [];
         }
 
@@ -49,6 +85,29 @@ class Feature implements FeatureInterface
         $this->percentage = (int) $rawPercentage;
         $this->users = $rawUsers !== '' ? explode(',', $rawUsers) : [];
         $this->groups = $rawGroups !== '' ? explode(',', $rawGroups) : [];
+    }
+
+    /**
+     * Coerce a possibly-mixed value into a list<string>, ignoring entries
+     * that aren't string-like.
+     *
+     * @return list<string>
+     */
+    private function stringListFromMixed(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $out = [];
+        /** @var mixed $entry */
+        foreach ($value as $entry) {
+            if (is_string($entry)) {
+                $out[] = $entry;
+            }
+        }
+
+        return $out;
     }
 
     public function getName(): string
@@ -68,13 +127,7 @@ class Feature implements FeatureInterface
 
     public function serialize(): string
     {
-        return implode('|', [
-            (string) $this->percentage,
-            implode(',', $this->users),
-            implode(',', $this->groups),
-            $this->requestParam ?? '',
-            json_encode($this->data),
-        ]);
+        return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
     public function addUser(RolloutUserInterface $user): void
