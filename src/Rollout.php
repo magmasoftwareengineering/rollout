@@ -11,7 +11,7 @@ use MagmaSoftwareEngineering\Rollout\Storage\StorageInterface;
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 modernisation)
  */
-class Rollout
+class Rollout implements RolloutInterface
 {
     /** @var array<string, Closure> */
     private array $groups;
@@ -195,7 +195,7 @@ class Rollout
         return 'feature:__features__';
     }
 
-    protected function save(Feature $feature): void
+    protected function save(FeatureInterface $feature): void
     {
         $name = $feature->getName();
         $this->storage->set($this->key($name), $feature->serialize());

@@ -8,7 +8,7 @@ namespace MagmaSoftwareEngineering\Rollout;
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 modernisation)
  */
-class Feature
+class Feature implements FeatureInterface
 {
     /** @var list<string> */
     private array $groups = [];
@@ -167,7 +167,7 @@ class Feature
     /**
      * @param array<string, mixed> $requestParameters
      */
-    public function isActive(Rollout $rollout, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
+    public function isActive(RolloutInterface $rollout, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
     {
         if ($user === null) {
             return $this->isParamInRequestParams($requestParameters)
@@ -229,7 +229,7 @@ class Feature
         return in_array($user->getRolloutIdentifier(), $this->users, true);
     }
 
-    private function isInActiveGroup(Rollout $rollout, ?RolloutUserInterface $user = null): bool
+    private function isInActiveGroup(RolloutInterface $rollout, ?RolloutUserInterface $user = null): bool
     {
         foreach ($this->groups as $group) {
             if ($rollout->isActiveInGroup($group, $user)) {
