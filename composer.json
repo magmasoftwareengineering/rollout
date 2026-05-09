@@ -24,7 +24,7 @@
         "codeception/codeception": "^5.3",
         "codeception/module-asserts": "^3.3",
         "doctrine/cache": "^2.2",
-        "mongodb/mongodb": "^1.20",
+        "mongodb/mongodb": "^1.20 || ^2.0",
         "predis/predis": "^2.3",
         "psr/simple-cache": "^3.0",
         "roave/security-advisories": "dev-latest",
