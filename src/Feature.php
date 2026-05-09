@@ -1,287 +1,305 @@
 <?php
-/**
- *
- */
 
-namespace Opensoft\Rollout;
+declare(strict_types=1);
+
+namespace MagmaSoftwareEngineering\Rollout;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 modernisation)
  */
-class Feature
+class Feature implements FeatureInterface
 {
-    /**
-     * @var string
-     */
-    private $name;
+    /** @var list<string> */
+    private array $groups = [];
 
-    /**
-     * @var array
-     */
-    private $groups = array();
+    /** @var list<string> */
+    private array $users = [];
 
-    /**
-     * @var array
-     */
-    private $users = array();
+    private int $percentage = 0;
 
-    /**
-     * @var integer
-     */
-    private $percentage = 0;
+    private ?string $requestParam = null;
 
-    /**
-     * @var string|null
-     */
-    private $requestParam;
+    /** @var array<string, mixed> */
+    private array $data = [];
 
-    /**
-     * @var array
-     */
-    private $data = array();
-
-    /**
-     * @param string $name
-     * @param string|null $settings
-     */
-    public function __construct($name, $settings = null)
+    public function __construct(private readonly string $name, ?string $settings = null)
     {
-        $this->name = $name;
-        if ($settings) {
-            $settings = explode('|', $settings);
-
-            if (isset($settings[3])) {
-                $rawRequestParam = $settings[3];
-                $this->requestParam = $rawRequestParam;
-            }
-
-            //We can not trust the list function because of backwords compatibility
-            if (isset($settings[4])) {
-                $rawData = $settings[4];
-                $this->data = !empty($rawData)? json_decode($rawData, true) : array();
-            }
-
-            list($rawPercentage, $rawUsers, $rawGroups) = $settings;
-            $this->percentage = (int) $rawPercentage;
-            $this->users = !empty($rawUsers) ? explode(',', $rawUsers) : array();
-            $this->groups = !empty($rawGroups) ? explode(',', $rawGroups) : array();
-        } else {
+        if ($settings === null || $settings === '') {
             $this->clear();
+            return;
         }
+
+        // Format detection: 3.0+ emits JSON (always starts with '{').
+        // 2.x emitted pipe-delimited records (first segment is the percentage,
+        // i.e. always a digit). Reading both keeps existing storage data
+        // loadable across an upgrade.
+        if ($settings[0] === '{') {
+            $this->loadJsonFormat($settings);
+            return;
+        }
+
+        $this->loadLegacyPipeFormat($settings);
+    }
+
+    private function loadJsonFormat(string $settings): void
+    {
+        $decoded = json_decode($settings, true);
+        if (!is_array($decoded)) {
+            $this->clear();
+            return;
+        }
+
+        $this->percentage = (int) ($decoded['percentage'] ?? 0);
+        $this->users = $this->stringListFromMixed($decoded['users'] ?? null);
+        $this->groups = $this->stringListFromMixed($decoded['groups'] ?? null);
+        $rawRequestParam = $decoded['requestParam'] ?? null;
+        $this->requestParam = is_string($rawRequestParam) && $rawRequestParam !== ''
+            ? $rawRequestParam
+            : null;
+        /** @var mixed $rawData */
+        $rawData = $decoded['data'] ?? null;
+        /** @psalm-suppress MixedAssignment, MixedPropertyTypeCoercion */
+        $this->data = is_array($rawData) ? $rawData : [];
+    }
+
+    private function loadLegacyPipeFormat(string $settings): void
+    {
+        $parts = explode('|', $settings);
+
+        if (isset($parts[3]) && $parts[3] !== '') {
+            $this->requestParam = $parts[3];
+        }
+
+        // Older payloads sometimes omit later fields, so we can't rely on a
+        // single list() destructure for the whole array.
+        if (isset($parts[4]) && $parts[4] !== '') {
+            $decoded = json_decode($parts[4], true);
+            /** @psalm-suppress MixedPropertyTypeCoercion */
+            $this->data = is_array($decoded) ? $decoded : [];
+        }
+
+        $rawPercentage = $parts[0] ?? '0';
+        $rawUsers = $parts[1] ?? '';
+        $rawGroups = $parts[2] ?? '';
+        $this->percentage = (int) $rawPercentage;
+        $this->users = $rawUsers !== '' ? explode(',', $rawUsers) : [];
+        $this->groups = $rawGroups !== '' ? explode(',', $rawGroups) : [];
     }
 
     /**
-     * @return string
+     * Coerce a possibly-mixed value into a list<string>, ignoring entries
+     * that aren't string-like.
+     *
+     * @return list<string>
      */
-    public function getName()
+    private function stringListFromMixed(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $out = [];
+        /** @var mixed $entry */
+        foreach ($value as $entry) {
+            if (is_string($entry)) {
+                $out[] = $entry;
+            }
+        }
+
+        return $out;
+    }
+
+    #[\Override]
+    public function getName(): string
     {
         return $this->name;
     }
 
-    /**
-     * @param integer $percentage
-     */
-    public function setPercentage($percentage)
+    #[\Override]
+    public function setPercentage(int $percentage): void
     {
         $this->percentage = $percentage;
     }
 
-    /**
-     * @return integer
-     */
-    public function getPercentage()
+    #[\Override]
+    public function getPercentage(): int
     {
         return $this->percentage;
     }
 
-    /**
-     * @return string
-     */
-    public function serialize()
+    #[\Override]
+    public function serialize(): string
     {
-        return implode('|', array(
-            $this->percentage,
-            implode(',', $this->users),
-            implode(',', $this->groups),
-            $this->requestParam,
-            json_encode($this->data)
-        ));
+        return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
-    /**
-     * @param RolloutUserInterface $user
-     */
-    public function addUser(RolloutUserInterface $user)
+    #[\Override]
+    public function addUser(RolloutUserInterface $user): void
     {
-        if (!in_array($user->getRolloutIdentifier(), $this->users)) {
-            $this->users[] = $user->getRolloutIdentifier();
+        $id = $user->getRolloutIdentifier();
+        if (!in_array($id, $this->users, true)) {
+            $this->users[] = $id;
         }
     }
 
-    /**
-     * @param RolloutUserInterface $user
-     */
-    public function removeUser(RolloutUserInterface $user)
+    #[\Override]
+    public function removeUser(RolloutUserInterface $user): void
     {
-        if (($key = array_search($user->getRolloutIdentifier(), $this->users)) !== false) {
+        $key = array_search($user->getRolloutIdentifier(), $this->users, true);
+        if ($key !== false) {
             unset($this->users[$key]);
+            $this->users = array_values($this->users);
         }
     }
 
     /**
-     * @return array
+     * @return list<string>
      */
-    public function getUsers()
+    #[\Override]
+    public function getUsers(): array
     {
         return $this->users;
     }
 
-    /**
-     * @param string $group
-     */
-    public function addGroup($group)
+    #[\Override]
+    public function addGroup(string $group): void
     {
-        if (!in_array($group, $this->groups)) {
+        if (!in_array($group, $this->groups, true)) {
             $this->groups[] = $group;
         }
     }
 
-    /**
-     * @param string $group
-     */
-    public function removeGroup($group)
+    #[\Override]
+    public function removeGroup(string $group): void
     {
-        if (($key = array_search($group, $this->groups)) !== false) {
+        $key = array_search($group, $this->groups, true);
+        if ($key !== false) {
             unset($this->groups[$key]);
+            $this->groups = array_values($this->groups);
         }
     }
 
     /**
-     * @return array
+     * @return list<string>
      */
-    public function getGroups()
+    #[\Override]
+    public function getGroups(): array
     {
         return $this->groups;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getRequestParam()
+    #[\Override]
+    public function getRequestParam(): ?string
     {
         return $this->requestParam;
     }
 
-    /**
-     * @param string|null $requestParam
-     */
-    public function setRequestParam($requestParam)
+    #[\Override]
+    public function setRequestParam(?string $requestParam): void
     {
         $this->requestParam = $requestParam;
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      */
-    public function getData()
+    #[\Override]
+    public function getData(): array
     {
         return $this->data;
     }
 
     /**
-     * @param array $data
+     * @param array<string, mixed> $data
      */
-    public function setData(array $data)
+    #[\Override]
+    public function setData(array $data): void
     {
         $this->data = $data;
     }
 
     /**
-     * Clear the feature of all configuration
+     * Clear the feature of all configuration.
      */
-    public function clear()
+    #[\Override]
+    public function clear(): void
     {
-        $this->groups = array();
-        $this->users = array();
+        $this->groups = [];
+        $this->users = [];
         $this->percentage = 0;
-        $this->requestParam = '';
-        $this->data = array();
+        $this->requestParam = null;
+        $this->data = [];
     }
 
     /**
-     * Is the feature active?
-     *
-     * @param Rollout $rollout
-     * @param RolloutUserInterface|null $user
-     * @param array $requestParameters
-     * @return bool
+     * @param array<string, mixed> $requestParameters
      */
-    public function isActive(Rollout $rollout, ?RolloutUserInterface $user = null, array $requestParameters = array())
+    #[\Override]
+    public function isActive(RolloutInterface $rollout, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
     {
-        if (null == $user) {
+        if ($user === null) {
             return $this->isParamInRequestParams($requestParameters)
-                || $this->percentage == 100
+                || $this->percentage === 100
                 || $this->isInActiveGroup($rollout);
         }
 
-        return $this->isParamInRequestParams($requestParameters) ||
-            $this->isUserInPercentage($user) ||
-            $this->isUserInActiveUsers($user) ||
-            $this->isInActiveGroup($rollout, $user);
+        return $this->isParamInRequestParams($requestParameters)
+            || $this->isUserInPercentage($user)
+            || $this->isUserInActiveUsers($user)
+            || $this->isInActiveGroup($rollout, $user);
     }
 
     /**
-     * @return array
+     * @return array{percentage: int, groups: list<string>, users: list<string>, requestParam: ?string, data: array<string, mixed>}
      */
-    public function toArray()
+    #[\Override]
+    public function toArray(): array
     {
-        return array(
+        return [
             'percentage' => $this->percentage,
             'groups' => $this->groups,
             'users' => $this->users,
             'requestParam' => $this->requestParam,
-            'data'=> $this->data
-        );
+            'data' => $this->data,
+        ];
     }
 
     /**
-     * @param array $requestParameters
-     * @return bool
+     * @param array<string, mixed> $requestParameters
      */
-    private function isParamInRequestParams(array $requestParameters)
+    private function isParamInRequestParams(array $requestParameters): bool
     {
-        $param = explode('=', $this->requestParam);
-        $key = array_shift($param);
-        $value = array_shift($param);
+        if ($this->requestParam === null || $this->requestParam === '') {
+            return false;
+        }
 
-        return $key && array_key_exists($key, $requestParameters) &&
-            (empty($value) || $requestParameters[$key] == $value);
+        $parts = explode('=', $this->requestParam);
+        $key = array_shift($parts);
+        $value = array_shift($parts);
+
+        if ($key === null || $key === '' || !array_key_exists($key, $requestParameters)) {
+            return false;
+        }
+
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        return (string) $requestParameters[$key] === $value;
     }
 
-    /**
-     * @param RolloutUserInterface $user
-     * @return bool
-     */
-    private function isUserInPercentage(RolloutUserInterface $user)
+    private function isUserInPercentage(RolloutUserInterface $user): bool
     {
         return abs(crc32($user->getRolloutIdentifier()) % 100) < $this->percentage;
     }
 
-    /**
-     * @param RolloutUserInterface $user
-     * @return boolean
-     */
-    private function isUserInActiveUsers(RolloutUserInterface $user)
+    private function isUserInActiveUsers(RolloutUserInterface $user): bool
     {
-        return in_array($user->getRolloutIdentifier(), $this->users);
+        return in_array($user->getRolloutIdentifier(), $this->users, true);
     }
 
-    /**
-     * @param Rollout $rollout
-     * @param RolloutUserInterface|null $user
-     * @return bool
-     */
-    private function isInActiveGroup(Rollout $rollout, ?RolloutUserInterface $user = null)
+    private function isInActiveGroup(RolloutInterface $rollout, ?RolloutUserInterface $user = null): bool
     {
         foreach ($this->groups as $group) {
             if ($rollout->isActiveInGroup($group, $user)) {

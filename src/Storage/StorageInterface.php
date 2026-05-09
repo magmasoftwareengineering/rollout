@@ -1,31 +1,17 @@
 <?php
-/**
- * 
- */
 
-namespace Opensoft\Rollout\Storage;
+declare(strict_types=1);
+
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  */
 interface StorageInterface
 {
-    /**
-     * @param  string $key
-     * @return string|null Null if the value is not found
-     */
-    public function get($key);
+    public function get(string $key): ?string;
 
-    /**
-     * @param string $key
-     * @param string $value
-     * @return void
-     */
-    public function set($key, $value);
+    public function set(string $key, string $value): void;
 
-    /**
-     * @param string $key
-     * @return void
-     */
-    public function remove($key);
-} 
+    public function remove(string $key): void;
+}

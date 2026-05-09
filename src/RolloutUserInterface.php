@@ -1,18 +1,13 @@
 <?php
-/**
- * 
- */
 
-namespace Opensoft\Rollout;
+declare(strict_types=1);
 
+namespace MagmaSoftwareEngineering\Rollout;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  */
 interface RolloutUserInterface
 {
-    /**
-     * @return string
-     */
-    public function getRolloutIdentifier();
-} 
+    public function getRolloutIdentifier(): string;
+}

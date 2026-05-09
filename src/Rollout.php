@@ -1,276 +1,198 @@
 <?php
-/**
- *
- */
 
-namespace Opensoft\Rollout;
+declare(strict_types=1);
 
-use Opensoft\Rollout\Storage\StorageInterface;
+namespace MagmaSoftwareEngineering\Rollout;
+
+use Closure;
+use MagmaSoftwareEngineering\Rollout\Storage\StorageInterface;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 modernisation)
  */
-class Rollout
+class Rollout implements RolloutInterface
 {
-    /**
-     * @var StorageInterface
-     */
-    private $storage;
+    /** @var array<string, Closure> */
+    private array $groups;
 
-    /**
-     * @var array
-     */
-    private $groups;
-
-    /**
-     * @param StorageInterface $storage
-     */
-    public function __construct(StorageInterface $storage)
+    public function __construct(private readonly StorageInterface $storage)
     {
-        $this->storage = $storage;
-        $this->groups = array(
-            'all' => function(?RolloutUserInterface $user) { return $user !== null; }
-        );
+        $this->groups = [
+            'all' => static fn (?RolloutUserInterface $user): bool => $user !== null,
+        ];
     }
 
-    /**
-     * @param string $feature
-     */
-    public function activate($feature)
+    #[\Override]
+    public function activate(string $feature): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setPercentage(100);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setPercentage(100);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     */
-    public function deactivate($feature)
+    #[\Override]
+    public function deactivate(string $feature): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->clear();
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->clear();
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     * @param string $group
-     */
-    public function activateGroup($feature, $group)
+    #[\Override]
+    public function activateGroup(string $feature, string $group): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->addGroup($group);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->addGroup($group);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     * @param string $group
-     */
-    public function deactivateGroup($feature, $group)
+    #[\Override]
+    public function deactivateGroup(string $feature, string $group): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->removeGroup($group);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->removeGroup($group);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     * @param RolloutUserInterface $user
-     */
-    public function activateUser($feature, RolloutUserInterface $user)
+    #[\Override]
+    public function activateUser(string $feature, RolloutUserInterface $user): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->addUser($user);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->addUser($user);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     * @param RolloutUserInterface $user
-     */
-    public function deactivateUser($feature, RolloutUserInterface $user)
+    #[\Override]
+    public function deactivateUser(string $feature, RolloutUserInterface $user): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->removeUser($user);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->removeUser($user);
+        $this->save($f);
     }
 
-    /**
-     * @param string $group
-     * @param \Closure $closure
-     */
-    public function defineGroup($group, \Closure $closure)
+    #[\Override]
+    public function defineGroup(string $group, Closure $closure): void
     {
         $this->groups[$group] = $closure;
     }
 
     /**
-     * @param string $feature
-     * @param RolloutUserInterface|null $user
-     * @param array $requestParameters
-     * @return bool
+     * @param array<string, mixed> $requestParameters
      */
-    public function isActive($feature, ?RolloutUserInterface $user = null, array $requestParameters = array())
+    #[\Override]
+    public function isActive(string $feature, ?RolloutUserInterface $user = null, array $requestParameters = []): bool
     {
-        $feature = $this->get($feature);
-
-        return $feature ? $feature->isActive($this, $user, $requestParameters) : false;
+        return $this->get($feature)->isActive($this, $user, $requestParameters);
     }
 
-    /**
-     * @param string $feature
-     * @param integer $percentage
-     */
-    public function activatePercentage($feature, $percentage)
+    #[\Override]
+    public function activatePercentage(string $feature, int $percentage): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setPercentage($percentage);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setPercentage($percentage);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     */
-    public function deactivatePercentage($feature)
+    #[\Override]
+    public function deactivatePercentage(string $feature): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setPercentage(0);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setPercentage(0);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     * @param string $requestParam
-     */
-    public function activateRequestParam($feature, $requestParam)
+    #[\Override]
+    public function activateRequestParam(string $feature, string $requestParam): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setRequestParam($requestParam);
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setRequestParam($requestParam);
+        $this->save($f);
     }
 
-    /**
-     * @param string $feature
-     */
-    public function deactivateRequestParam($feature)
+    #[\Override]
+    public function deactivateRequestParam(string $feature): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setRequestParam('');
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setRequestParam('');
+        $this->save($f);
     }
 
-    /**
-     * @param string $group
-     * @param RolloutUserInterface|null $user
-     * @return bool
-     */
-    public function isActiveInGroup($group, ?RolloutUserInterface $user = null)
+    #[\Override]
+    public function isActiveInGroup(string $group, ?RolloutUserInterface $user = null): bool
     {
         if (!isset($this->groups[$group])) {
             return false;
         }
 
-        $g = $this->groups[$group];
-
-        return $g && $g($user);
+        return (bool) ($this->groups[$group])($user);
     }
 
-    /**
-     * @param string $feature
-     * @return Feature
-     */
-    public function get($feature)
+    #[\Override]
+    public function get(string $feature): Feature
     {
         $settings = $this->storage->get($this->key($feature));
 
         if (!empty($settings)) {
-            $f = new Feature($feature, $settings);
-        } else {
-            $f = new Feature($feature);
-
-            $this->save($f);
+            return new Feature($feature, $settings);
         }
+
+        $f = new Feature($feature);
+        $this->save($f);
 
         return $f;
     }
 
     /**
-     * Remove a feature definition from rollout
-     *
-     * @param string $feature
+     * Remove a feature definition from rollout.
      */
-    public function remove($feature)
+    #[\Override]
+    public function remove(string $feature): void
     {
         $this->storage->remove($this->key($feature));
 
         $features = $this->features();
-        if (in_array($feature, $features)) {
-            $features = array_diff($features, array($feature));
+        if (in_array($feature, $features, true)) {
+            $features = array_diff($features, [$feature]);
         }
         $this->storage->set($this->featuresKey(), implode(',', $features));
     }
 
     /**
-     * Update feature specific data
+     * Update feature-specific data.
      *
-     * @example $rollout->setFeatureData('chat', array(
-     *  'description'  => 'foo',
-     *  'release_date' => 'bar',
-     *  'whatever'     => 'baz'
-     * ));
+     * @example $rollout->setFeatureData('chat', [
+     *   'description'  => 'foo',
+     *   'release_date' => 'bar',
+     *   'whatever'     => 'baz',
+     * ]);
      *
-     * @param string $feature
-     * @param array  $data
+     * @param array<string, mixed> $data
      */
-    public function setFeatureData($feature, array $data)
+    #[\Override]
+    public function setFeatureData(string $feature, array $data): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setData(array_merge($feature->getData(), $data));
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setData(array_merge($f->getData(), $data));
+        $this->save($f);
     }
 
     /**
-     * Clear all feature data
-     *
-     * @param  string $feature
+     * Clear all feature data.
      */
-    public function clearFeatureData($feature)
+    #[\Override]
+    public function clearFeatureData(string $feature): void
     {
-        $feature = $this->get($feature);
-        if ($feature) {
-            $feature->setData(array());
-            $this->save($feature);
-        }
+        $f = $this->get($feature);
+        $f->setData([]);
+        $this->save($f);
     }
 
     /**
-     * @return array
+     * @return list<string>
      */
-    public function features()
+    #[\Override]
+    public function features(): array
     {
         $content = $this->storage->get($this->featuresKey());
 
@@ -278,36 +200,26 @@ class Rollout
             return explode(',', $content);
         }
 
-        return array();
+        return [];
     }
 
-    /**
-     * @param string $name
-     * @return string
-     */
-    private function key($name)
+    private function key(string $name): string
     {
         return 'feature:' . $name;
     }
 
-    /**
-     * @return string
-     */
-    private function featuresKey()
+    private function featuresKey(): string
     {
         return 'feature:__features__';
     }
 
-    /**
-     * @param Feature $feature
-     */
-    protected function save(Feature $feature)
+    protected function save(FeatureInterface $feature): void
     {
         $name = $feature->getName();
         $this->storage->set($this->key($name), $feature->serialize());
 
         $features = $this->features();
-        if (!in_array($name, $features)) {
+        if (!in_array($name, $features, true)) {
             $features[] = $name;
         }
         $this->storage->set($this->featuresKey(), implode(',', $features));

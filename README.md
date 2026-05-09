@@ -1,169 +1,145 @@
-rollout (for php)
-=================
+# magmasoftwareengineering/rollout
 
-[![Build Status](https://travis-ci.org/opensoft/rollout.svg?branch=master)](https://travis-ci.org/opensoft/rollout) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/opensoft/rollout/badges/quality-score.png?s=a75edbc812e0b27279496e8f2f274f6a4c58dd9a)](https://scrutinizer-ci.com/g/opensoft/rollout/) [![Code Coverage](https://scrutinizer-ci.com/g/opensoft/rollout/badges/coverage.png?s=f2e7939ee89b8788df83bcc556aefedcf03cb6e4)](https://scrutinizer-ci.com/g/opensoft/rollout/)
+Feature flags for PHP. A maintained successor to [`opensoft/rollout`](https://github.com/opensoft/rollout), itself a port of Ruby's [FetLife/rollout](https://github.com/FetLife/rollout).
 
-Feature flippers for PHP.  A port of ruby's [rollout](https://github.com/FetLife/rollout).
+Upstream `opensoft/rollout` has been unmaintained since 2017 (last published release predates PHP 7.4). This package picks up where it stopped: PHP 8.3+ baseline, modernised storage adapters, JSON wire format, real interfaces, strict types, Codeception 5 test suite, Psalm static analysis. The runtime semantics — percentage rollouts, group activation, user targeting, request-parameter gating — are unchanged, so migration from `opensoft/rollout: ^2.3` is a one-line composer change plus optional `use` statement updates.
 
-Install It
-----------
+## Installation
 
-    composer require opensoft/rollout
+```sh
+composer require magmasoftwareengineering/rollout
+```
 
-How it works
-------------
+Requires PHP 8.3+.
 
-Initialize a rollout object:
+## Migrating from `opensoft/rollout`
+
+Replace the dependency:
+
+```diff
+- "opensoft/rollout": "^2.3"
++ "magmasoftwareengineering/rollout": "^3.0"
+```
+
+Existing `use Opensoft\Rollout\Rollout;` statements continue to resolve via `class_alias` shims. New code should use the modern namespace:
 
 ```php
-use Opensoft\Rollout\Rollout;
-use Opensoft\Rollout\Storage\ArrayStorage;
+use MagmaSoftwareEngineering\Rollout\Rollout;
+use MagmaSoftwareEngineering\Rollout\Storage\ArrayStorage;
+```
+
+For the full migration guide including BC breaks, see [`UPGRADE-3.0.md`](UPGRADE-3.0.md).
+
+## Quick start
+
+```php
+use MagmaSoftwareEngineering\Rollout\Rollout;
+use MagmaSoftwareEngineering\Rollout\Storage\ArrayStorage;
 
 $rollout = new Rollout(new ArrayStorage());
+
+// Activate globally
+$rollout->activate('chat');
+
+// Is the feature active?
+$rollout->isActive('chat');                  // true
+$rollout->isActive('chat', $user);           // true
 ```
 
-Check if a feature is active for a particular user:
+## Targeting
+
+### Groups
+
+`all` is registered by default. Define your own:
 
 ```php
-$rollout->isActive('chat', $user);  // returns true/false
-```
-
-Check if a feature is activated globally:
-
-```php
-$rollout->isActive('chat'); // returns true/false
-```
-
-Storage
--------
-
-There are a number of different storage implementations for where the configuration for the rollout is stored.
-
-* ArrayStorage - default storage, not persistent
-* DoctrineCacheStorageAdapter - requires [doctrine/cache][doctrine-cache]
-* PDOStorageAdapter - persistent using [PDO][pdo]
-* RedisStorageAdapter - persistent using [Redis][redis]
-* MongoDBStorageAdapter - persistent using [Mongo][mongo]
-
-[doctrine-cache]: https://packagist.org/packages/doctrine/cache
-[pdo]: http://php.net/pdo
-[redis]: http://redis.io
-[mongo]: http://mongodb.org
-
-All storage adapters must implement `Opensoft\Rollout\Storage\StorageInterface`.
-
-Groups
-------
-
-Rollout ships with one group by default: `all`, which does exactly what it sounds like.
-
-You can activate the `all` group for chat features like this:
-
-```php
-$rollout->activateGroup('chat', 'all');
-```
-
-You may also want to define your own groups.  We have one for caretakers:
-
-```php
-$rollout->defineGroup('caretakers', function(RolloutUserInterface $user = null) {
-  if (null === $user) {
-    return false;
-  }
-
-  return $user->isCaretaker(); // boolean
+$rollout->defineGroup('caretakers', static function (?RolloutUserInterface $user): bool {
+    return $user?->isCaretaker() ?? false;
 });
+
+$rollout->activateGroup('chat', 'caretakers');
+$rollout->isActive('chat', $user);          // depends on the closure
 ```
 
-You can activate multiple groups per feature.
+Multiple groups can be active per feature.
 
-Deactivate groups like this:
-
-```php
-$rollout->deactivateGroup('chat');
-```
-
-Specific Users
---------------
-
-You may want to let a specific user into a beta test or something.  If that user isn't part of an existing group, you can let them in specifically:
+### Specific users
 
 ```php
 $rollout->activateUser('chat', $user);
-```
-
-Deactivate them like this:
-
-```php
 $rollout->deactivateUser('chat', $user);
 ```
 
-Rollout users must implement the `RolloutUserInterface`.
+User objects must implement `RolloutUserInterface` (a single `getRolloutIdentifier(): string` method).
 
-User Percentages
-----------------
-
-If you're rolling out a new feature, you may want to test the waters by slowly enabling it for a percentage of your users.
+### Percentages
 
 ```php
 $rollout->activatePercentage('chat', 20);
 ```
 
-The algorithm for determining which users get let in is this:
+Activation is deterministic given the same identifier:
 
 ```php
-crc32($user->getRolloutIdentifier()) % 100 < $percentage
+abs(crc32($user->getRolloutIdentifier()) % 100) < $percentage
 ```
 
-So, for 20%, users 0, 1, 10, 11, 20, 21, etc would be allowed in. Those users would remain in as the percentage increases.
+Activating at 100% is equivalent to a global activation.
 
-Deactivate all percentages like this:
+### Request parameters
 
 ```php
-$rollout->deactivatePercentage('chat');
+$rollout->activateRequestParam('chat', 'FF_facebookIntegration=1');
+$rollout->isActive('chat', null, ['FF_facebookIntegration' => '1']);  // true
 ```
 
-**Note:** Activating a feature for 100% of users will also make it activate `globally`.  This is like calling `$rollout->isActive()` without a user object.
+### Combining
 
-Feature is Broken
------------------
+A feature is active for a given user when **any** of the configured rules match: explicit user list, percentage, group, or request parameter.
 
-Deactivate everybody at once:
+## Storage adapters
 
-```php
-$rollout->deactivate('chat');
-```
+| Adapter                          | Use case                                                       | Required |
+| -------------------------------- | -------------------------------------------------------------- | -------- |
+| `ArrayStorage`                   | Default. In-process, non-persistent. Fine for tests.           | bundled  |
+| `Psr16StorageAdapter`            | **Recommended for new projects.** Any PSR-16 cache library — `symfony/cache`, `cache/cache`, `laminas/laminas-cache`. | `psr/simple-cache` |
+| `RedisStorageAdapter`            | Persistent via Redis. Accepts `\Redis` (ext-redis) or `\Predis\Client`. | `ext-redis` or `predis/predis` |
+| `PDOStorageAdapter`              | Persistent via any RDBMS supported by PDO.                     | `ext-pdo` |
+| `MongoDBStorageAdapter`          | Persistent via MongoDB. Rewritten in 3.0 for the modern `mongodb/mongodb` library. | `ext-mongodb`, `mongodb/mongodb` |
+| `DoctrineCacheStorageAdapter`    | **Deprecated.** `doctrine/cache` itself is deprecated upstream. Use `Psr16StorageAdapter` instead. Will be removed in 4.0. | `doctrine/cache` |
 
-You may wish to disable features programmatically if monitoring tools detect unusually high error rates for example.
+All adapters implement `Storage\StorageInterface` and can be substituted freely.
 
-Remove a Feature (added in 2.0.0)
----------------------------------
-
-After a feature becomes mainstream or a failed experiment, you may want to remove the feature definition from rollout.
+## Removing a feature
 
 ```php
 $rollout->remove('chat');
 ```
 
-Note: If there is still code referencing the feature, it will be recreated with default settings.
+Code that still calls `isActive('chat')` will recreate the feature with default (deactivated) settings on the next call.
 
-Symfony2 Bundle
----------------
+## Wire format
 
-A Symfony2 bundle is available to integrate rollout into Symfony2 projects.  It can be found at http://github.com/opensoft/OpensoftRolloutBundle.
+3.0 serialises feature definitions as JSON:
 
-Zend Framework 2 Module
------------------------
+```json
+{"percentage":50,"groups":["admins"],"users":["user-72"],"requestParam":null,"data":{}}
+```
 
-A Zend Framework 2 module is availabile to intergrate rollout into Zend Framwork 2 projects. It can be found at https://github.com/adlogix/zf2-opensoft-rollout.
+Existing data written by `opensoft/rollout` 2.x (pipe-delimited, e.g. `50|user-72|admins||{}`) is read transparently. New writes always emit JSON. See [`UPGRADE-3.0.md`](UPGRADE-3.0.md) for the mid-upgrade-fleet caveat.
 
-Implementations in other languages
-----------------------------------
+## Framework integrations
 
-* Ruby: http://github.com/FetLife/rollout
-* Python: http://github.com/asenchi/proclaim
+- **Slim 4:** [`magmasoftwareengineering/rollout-group-slim`](https://bitbucket.org/magmasoftwareengineering/rollout-group-slim) provides Slim integration with multi-storage replication, a Symfony Console command for admin, Twig extensions, and a `FeatureFlaggableTrait`.
+- **OpenFeature:** an OpenFeature Provider built on this package is in progress (see `magmasoftwareengineering/rollout-openfeature-provider`).
 
-Copyright
----------
+## Implementations in other languages
 
-Copyright © 2017 James Golick, BitLove, Inc. See LICENSE for details.
+- Ruby: <https://github.com/FetLife/rollout> (the original)
+- Python: <https://github.com/asenchi/proclaim>
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
+
+Original copyright © 2017 James Golick, BitLove, Inc. and Opensoft. 3.0 modernisation copyright © 2026 MagmaSoftware Engineering.
