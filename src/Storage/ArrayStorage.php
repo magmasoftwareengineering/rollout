@@ -1,45 +1,32 @@
 <?php
-/**
- * 
- */
 
-namespace Opensoft\Rollout\Storage;
+declare(strict_types=1);
+
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
  */
 class ArrayStorage implements StorageInterface
 {
-    /**
-     * @var array
-     */
-    private $storage = array();
+    /** @var array<string, string> */
+    private array $storage = [];
 
-    /**
-     * @param string $key
-     * @return mixed|null
-     */
-    public function get($key)
+    #[\Override]
+    public function get(string $key): ?string
     {
-        return isset($this->storage[$key]) ? $this->storage[$key] : null;
+        return $this->storage[$key] ?? null;
     }
 
-    /**
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value)
+    #[\Override]
+    public function set(string $key, string $value): void
     {
         $this->storage[$key] = $value;
     }
 
-    /**
-     * @param string $key
-     */
-    public function remove($key)
+    #[\Override]
+    public function remove(string $key): void
     {
-        if (isset($this->storage[$key])) {
-            unset($this->storage[$key]);
-        }
+        unset($this->storage[$key]);
     }
-} 
+}

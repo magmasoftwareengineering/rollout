@@ -1,70 +1,59 @@
 <?php
 
-namespace Opensoft\Rollout\Storage;
+declare(strict_types=1);
+
+namespace MagmaSoftwareEngineering\Rollout\Storage;
 
 /**
- * Storage adapter using Redis
+ * Storage adapter using Redis.
+ *
+ * Accepts either a \Redis instance (ext-redis) or a \Predis\Client.
+ * Both clients support the hget/hset/hdel commands used here.
+ *
+ * Stored values are JSON-wrapped for compatibility with data written by
+ * older versions of this adapter; values written by 3.0+ are unwrapped
+ * transparently on read.
  *
  * @author Woody Gilk <@shadowhand>
  */
 class RedisStorageAdapter implements StorageInterface
 {
-    /**
-     * @var string
-     */
-    const DEFAULT_GROUP = 'rollout_feature';
+    public const DEFAULT_GROUP = 'rollout_feature';
 
-    /**
-     * @var object
-     */
-    private $redis;
+    private readonly string $group;
 
-    /**
-     * @var string
-     */
-    private $group = self::DEFAULT_GROUP;
-
-    public function __construct($redis, $group = null)
-    {
-        $this->redis = $redis;
-
-        if ($group) {
-            $this->group = $group;
-        }
+    public function __construct(
+        private readonly object $redis,
+        ?string $group = null,
+    ) {
+        $this->group = $group ?? self::DEFAULT_GROUP;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function get($key)
+    #[\Override]
+    public function get(string $key): ?string
     {
+        /** @psalm-suppress MixedAssignment */
         $result = $this->redis->hget($this->group, $key);
-
-        if (empty($result)) {
+        if ($result === null || $result === false || $result === '') {
             return null;
         }
 
-        $result = json_decode($result, true);
-
-        if (JSON_ERROR_NONE !== json_last_error()) {
+        $decoded = json_decode((string) $result, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
             return null;
         }
 
-        return $result;
+        return is_string($decoded) ? $decoded : null;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function set($key, $value)
+    #[\Override]
+    public function set(string $key, string $value): void
     {
         $this->redis->hset($this->group, $key, json_encode($value));
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function remove($key)
+    #[\Override]
+    public function remove(string $key): void
     {
         $this->redis->hdel($this->group, $key);
     }

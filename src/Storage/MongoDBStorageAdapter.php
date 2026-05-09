@@ -1,65 +1,69 @@
 <?php
 
-namespace Opensoft\Rollout\Storage;
+declare(strict_types=1);
+
+namespace MagmaSoftwareEngineering\Rollout\Storage;
+
+use MongoDB\Collection;
 
 /**
- * Storage adapter using MongoDB
+ * Storage adapter using MongoDB via the modern mongodb/mongodb library
+ * and ext-mongodb.
  *
- * @author James Hrisho <@securingsincity>
+ * Construct with a fully-resolved {@see \MongoDB\Collection}; the adapter
+ * stores each feature as a single document keyed by `name`:
+ *
+ *     { name: "feature:chat", value: "<serialised payload>" }
+ *
+ * Suggested setup:
+ *
+ *     $client = new \MongoDB\Client('mongodb://localhost:27017');
+ *     $collection = $client->selectCollection('app', 'rollout_feature');
+ *     $storage = new MongoDBStorageAdapter($collection);
+ *
+ * @author James Hrisho <@securingsincity> (original ext-mongo implementation)
+ * @author Jeremy Coates <hello@phpcodemonkey.me.uk> (3.0 ext-mongodb rewrite)
  */
 class MongoDBStorageAdapter implements StorageInterface
 {
+    public function __construct(private readonly Collection $collection) {}
 
-    /**
-     * @var object
-     */
-    private $mongo;
-
-    /**
-     * @var string
-     */
-    private $collection;
-
-    public function __construct($mongo, $collection = "rollout_feature")
+    public function getCollectionName(): string
     {
-        $this->mongo = $mongo;
-        $this->collection = $collection;
+        return $this->collection->getCollectionName();
     }
-    public function getCollectionName()
-    {
-        return $this->collection;
-    }
-    /**
-     * @inheritdoc
-     */
-    public function get($key)
-    {
-        $collection = $this->getCollectionName();
-        $result = $this->mongo->$collection->findOne(['name' => $key]);
 
-        if (!$result) {
+    #[\Override]
+    public function get(string $key): ?string
+    {
+        /** @var array{value?: mixed}|null $document */
+        $document = $this->collection->findOne(
+            ['name' => $key],
+            ['typeMap' => ['root' => 'array', 'document' => 'array']],
+        );
+
+        if ($document === null) {
             return null;
         }
 
-        return $result['value'];
+        $value = $document['value'] ?? null;
+
+        return is_string($value) ? $value : null;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function set($key, $value)
+    #[\Override]
+    public function set(string $key, string $value): void
     {
-        $collection = $this->getCollectionName();
-        $this->mongo->$collection->update(['name' => $key], ['$set' => ['value' => $value]], ['upsert' => true]);
+        $this->collection->updateOne(
+            ['name' => $key],
+            ['$set' => ['value' => $value]],
+            ['upsert' => true],
+        );
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function remove($key)
+    #[\Override]
+    public function remove(string $key): void
     {
-        $collection = $this->getCollectionName();
-        $this->mongo->$collection->remove(['name' => $key]);
+        $this->collection->deleteOne(['name' => $key]);
     }
-
 }

@@ -1,0 +1,5 @@
+actor: UnitTester
+suite_namespace: MagmaSoftwareEngineering\Rollout\Tests\Unit
+modules:
+    enabled:
+        - Asserts
