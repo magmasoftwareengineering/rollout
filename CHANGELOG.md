@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.0 — 2026-05-08
+## 3.0.0 — 2026-05-10
 
 **Maintained successor to `opensoft/rollout`.** The runtime semantics are unchanged; this is a packaging, modernisation, and quality-of-life release.
 
@@ -9,7 +9,7 @@
 - **Package renamed.** Replace `opensoft/rollout` with `magmasoftwareengineering/rollout` in `composer.json`. See [`UPGRADE-3.0.md`](UPGRADE-3.0.md) for the migration guide.
 - **PHP 8.3+ required** (was PHP 5.3.3+).
 - **Namespace renamed** to `MagmaSoftwareEngineering\Rollout\*`. Legacy `Opensoft\Rollout\*` names continue to resolve via `class_alias` shims for one major version; will be removed in 4.0.
-- **`MongoDBStorageAdapter` constructor signature changed** — now takes a `\MongoDB\Collection` directly (was an opaque `$mongo` plus collection name). The adapter is rewritten against the modern `mongodb/mongodb` library and ext-mongodb; the legacy ext-mongo path is gone.
+- **`MongoDBStorageAdapter` constructor signature changed** — now takes a `\MongoDB\Collection` directly (was an opaque `$mongo` plus collection name). The adapter is rewritten against the modern `mongodb/mongodb` library and ext-mongodb; the legacy ext-mongo path is gone. The `require-dev` constraint is `mongodb/mongodb: ^1.20 || ^2.0`, so both `ext-mongodb` 1.x and the current 2.x are supported.
 - **`StorageInterface` methods are now strictly typed.** `get(string $key): ?string`, `set(string $key, string $value): void`, `remove(string $key): void`. Custom storage implementations must update their signatures.
 - **`Rollout::save()` returns `void`** (was untyped). Subclasses overriding `save()` must adjust.
 - **Wire format is now JSON.** Existing pipe-delimited data already in storage is read transparently; new writes always emit JSON. See `UPGRADE-3.0.md` for the mid-upgrade fleet caveat.
@@ -22,7 +22,7 @@
 - **`#[\Override]` attributes** on every interface implementation method.
 - **Codeception 5 test suite** with 59 tests covering Feature, Rollout, all five storage adapters, and the new JSON / legacy-pipe wire-format reader.
 - **Psalm static analysis** at `errorLevel="4"`. Zero errors.
-- **Gitea CI** matrix on PHP 8.3 and 8.5; runs `composer validate`, Psalm, and the Unit suite.
+- **Gitea Actions workflow** (in `.gitea/workflows/test.yml`) defining a PHP 8.3 + 8.5 matrix that runs `composer validate`, Psalm, and the Unit suite. The workflow runs on the maintainers' internal Gitea mirrors; the file is checked in so contributors can see the matrix.
 
 ### Deprecated
 

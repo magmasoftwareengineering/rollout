@@ -2,7 +2,23 @@
 
 Feature flags for PHP. A maintained successor to [`opensoft/rollout`](https://github.com/opensoft/rollout), itself a port of Ruby's [FetLife/rollout](https://github.com/FetLife/rollout).
 
-Upstream `opensoft/rollout` has been unmaintained since 2017 (last published release predates PHP 7.4). This package picks up where it stopped: PHP 8.3+ baseline, modernised storage adapters, JSON wire format, real interfaces, strict types, Codeception 5 test suite, Psalm static analysis. The runtime semantics — percentage rollouts, group activation, user targeting, request-parameter gating — are unchanged, so migration from `opensoft/rollout: ^2.3` is a one-line composer change plus optional `use` statement updates.
+## Status
+
+> [`opensoft/rollout`](https://github.com/opensoft/rollout) has been unmaintained since 2017. The last upstream release predates PHP 7.4, the test suite targets a PHPUnit version EOL'd in 2017, and the legacy `ext-mongo` extension it relies on was removed from PHP itself in 7.0. Pull requests have sat unmerged for years.
+>
+> **This package is the active successor.** It targets the current PHP runtime (8.3+) on a modern toolchain, ships the storage adapters that 2.x lacked or had broken, and tracks the same wire-compatible behaviour so existing applications can migrate with a one-line `composer.json` change. See [Migrating from `opensoft/rollout`](#migrating-from-opensoftrollout) below.
+
+## What's new in 3.0
+
+- **PHP 8.3+** baseline with strict types, return/parameter types, and `#[\Override]` attributes throughout.
+- **JSON wire format** for serialised feature definitions, replacing the pipe-delimited string used by 2.x. Pipe-delimited records already in storage are read transparently — no migration script needed.
+- **Real interfaces.** `RolloutInterface` and `FeatureInterface` extracted so consumers can DI, mock, and decorate against the contract rather than the concrete classes.
+- **Modernised storage adapters.** `MongoDBStorageAdapter` rewritten for the modern `mongodb/mongodb` library and `ext-mongodb` (1.x or 2.x). New `Psr16StorageAdapter` works with any PSR-16 SimpleCache library; `DoctrineCacheStorageAdapter` is now `@deprecated` (will be removed in 4.0).
+- **Codeception 5 test suite** with full coverage of `Feature`, `Rollout`, every storage adapter, and the wire-format reader for both formats.
+- **Psalm static analysis** at level 4. Zero errors.
+- **Gitea Actions workflow** defining a PHP 8.3 + 8.5 CI matrix (run on the maintainers' internal Gitea mirrors).
+
+For a complete BC-break list see [`CHANGELOG.md`](CHANGELOG.md); for migration guidance see [`UPGRADE-3.0.md`](UPGRADE-3.0.md).
 
 ## Installation
 
@@ -105,7 +121,7 @@ A feature is active for a given user when **any** of the configured rules match:
 | `Psr16StorageAdapter`            | **Recommended for new projects.** Any PSR-16 cache library — `symfony/cache`, `cache/cache`, `laminas/laminas-cache`. | `psr/simple-cache` |
 | `RedisStorageAdapter`            | Persistent via Redis. Accepts `\Redis` (ext-redis) or `\Predis\Client`. | `ext-redis` or `predis/predis` |
 | `PDOStorageAdapter`              | Persistent via any RDBMS supported by PDO.                     | `ext-pdo` |
-| `MongoDBStorageAdapter`          | Persistent via MongoDB. Rewritten in 3.0 for the modern `mongodb/mongodb` library. | `ext-mongodb`, `mongodb/mongodb` |
+| `MongoDBStorageAdapter`          | Persistent via MongoDB. Rewritten in 3.0 for the modern `mongodb/mongodb` library. Supports both `ext-mongodb` 1.x (with `mongodb/mongodb ^1.20`) and 2.x (with `mongodb/mongodb ^2.0`). | `ext-mongodb`, `mongodb/mongodb: ^1.20 \|\| ^2.0` |
 | `DoctrineCacheStorageAdapter`    | **Deprecated.** `doctrine/cache` itself is deprecated upstream. Use `Psr16StorageAdapter` instead. Will be removed in 4.0. | `doctrine/cache` |
 
 All adapters implement `Storage\StorageInterface` and can be substituted freely.
