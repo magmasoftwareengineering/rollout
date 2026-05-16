@@ -147,7 +147,7 @@ Existing data written by `opensoft/rollout` 2.x (pipe-delimited, e.g. `50|user-7
 ## Framework integrations
 
 - **Slim 4:** [`magmasoftwareengineering/rollout-group-slim`](https://bitbucket.org/magmasoftwareengineering/rollout-group-slim) provides Slim integration with multi-storage replication, a Symfony Console command for admin, Twig extensions, and a `FeatureFlaggableTrait`.
-- **OpenFeature:** an OpenFeature Provider built on this package is in progress (see `magmasoftwareengineering/rollout-openfeature-provider`).
+- **OpenFeature:** the [`magmasoftwareengineering/rollout-openfeature-provider`](https://bitbucket.org/magmasoftwareengineering/rollout-openfeature-provider) package bridges the engine to the [OpenFeature](https://openfeature.dev) evaluation API. Boolean flags are a direct delegate to `Rollout::isActive`; typed flags (string / integer / float / object) use a `data['value']` convention on `Feature::getData()` as the variant payload. Initial release `0.1.0`.
 
 ## Implementations in other languages
 
