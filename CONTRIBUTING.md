@@ -54,15 +54,16 @@ Both must pass before opening a pull request.
 
 ## Branching model
 
-- **`main`** — tagged releases only. Don't commit directly.
-- **`develop`** — the integration branch. Pull requests merge here. Don't commit directly.
-- **`feature/**`** — your work-in-progress branches. CI runs on push.
+This project uses a single long-lived branch per major version — currently **`3.x`**. Releases are tagged from it, and it serves as both the integration and release branch. There is no separate `main` or `develop` branch; a future major version would live on `4.x`, and so on.
 
-When starting a change, branch off `develop`:
+- **`3.x`** — the current major line. Pull requests merge here, and releases are tagged here.
+- **`feature/**`** — work-in-progress branches. Branch off `3.x` and merge back into it. CI runs on push.
+
+When starting a change, branch off `3.x`:
 
 ```sh
-git checkout develop
-git pull origin develop
+git checkout 3.x
+git pull origin 3.x
 git checkout -b feature/short-description-of-change
 ```
 
@@ -103,7 +104,7 @@ Both must pass. The maintainers will run the same checks on the internal mirrors
 ## Submitting a pull request
 
 1. Push your feature branch to Bitbucket.
-2. Open a pull request targeting `develop`.
+2. Open a pull request targeting `3.x`.
 3. Describe **what** changed and **why**. Reference any issue it addresses.
 4. Confirm the test suite and Psalm pass locally on your machine (include the output if you like — it speeds review).
 5. Be responsive to review feedback. We'll be the same in return.

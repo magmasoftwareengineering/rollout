@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: ['*.x', 'main', 'master', 'feature/**']
+    branches: ['*.x', 'feature/**']
   pull_request:
-    branches: ['*.x', 'main', 'master']
+    branches: ['*.x']
 
 jobs:
   test:
