@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.1 — 2026-05-19
+
+Repository and documentation housekeeping. No runtime or API changes.
+
+### Added
+
+- `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` — contribution guidelines and the Contributor Covenant 2.1.
+
+### Changed
+
+- Adopted a single long-lived branch per major version (`3.x`), replacing the previous `main`/`develop` git-flow split. `CONTRIBUTING.md` and the CI workflow triggers are updated accordingly.
+
+---
+
 ## 3.0.0 — 2026-05-10
 
 **Maintained successor to `opensoft/rollout`.** The runtime semantics are unchanged; this is a packaging, modernisation, and quality-of-life release.
