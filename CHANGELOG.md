@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.2 — 2026-05-21
+
+PHP requirement constraint tidy. No API or runtime changes.
+
+### Changed
+
+- `require.php` simplified from `">=8.3 || >=8.5"` to `">=8.3"`. The right-hand side of the `||` was redundant — `>=8.3` already covers 8.4, 8.5 and later. Resolution behaviour is unchanged.
+
+---
+
 ## 3.0.1 — 2026-05-19
 
 Repository and documentation housekeeping. No runtime or API changes.
