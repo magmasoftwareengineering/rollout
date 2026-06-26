@@ -15,10 +15,10 @@ jobs:
         php-version: ['8.3', '8.5']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: magma_software_public/checkout@v4
 
       - name: Setup PHP ${{ matrix.php-version }}
-        uses: shivammathur/setup-php@v2
+        uses: magma_software_public/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, mongodb, pdo_sqlite
