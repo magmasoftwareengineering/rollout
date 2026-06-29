@@ -28,8 +28,39 @@ jobs:
       - name: Validate composer.json
         run: composer validate --strict --no-check-publish
 
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache composer dependencies
+        uses: magma_software_public/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-[-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-[-
+
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+        env:
+          PUBLIC_TOKEN_GITHUB: ${{ secrets.PUBLIC_TOKEN_GITHUB }}
+          COMPOSER_MAX_PARALLEL_HTTP: 4
+          COMPOSER_MAX_PARALLEL_PROCESSES: 4
+        run: |
+          if [ -z "${PUBLIC_TOKEN_GITHUB}" ]; then
+            echo "::warning::PUBLIC_TOKEN_GITHUB is empty — composer will hit codeload.github.com anonymously and may fail with HTTP/2 400."
+          else
+            export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"${PUBLIC_TOKEN_GITHUB}\"}}"
+          fi
+          for attempt in 1 2 3 ; do
+            composer install --prefer-dist --no-progress --no-interaction && break
+            if [ "$attempt" -lt 3 ] ; then
+              echo "::warning::composer install attempt $attempt failed; retrying after backoff"
+              sleep $((attempt * 30))
+            else
+              echo "::error::composer install failed after 3 attempts"
+              exit 1
+            fi
+          done
 
       - name: Static analysis (Psalm)
         run: vendor/bin/psalm --no-progress --output-format=github
