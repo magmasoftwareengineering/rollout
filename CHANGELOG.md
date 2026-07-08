@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.1.0 — 2026-07-08
+
+Rollback tooling: downgrade stored feature settings to the 2.x pipe format.
+
+### Added
+
+- `Feature::serializeLegacy()` — serialises to the 2.x pipe-delimited format (`percentage|users|groups|requestParam|dataJson`), the exact inverse of the legacy reader. Inherits the 2.x format's own constraint: user/group identifiers containing `,` or `|` cannot be represented.
+- `LegacyFormatConverter` — sweeps every registered feature in a `StorageInterface` and rewrites 3.x JSON records to the pipe format (`(new LegacyFormatConverter($storage))->downgrade()`). Idempotent. Needed because 2.x (and opensoft/rollout) cannot parse the JSON settings 3.x writes: rolling an application back to the older engine against 3.x-written storage fails until the settings are downgraded.
+
+---
+
 ## 3.0.2 — 2026-05-21
 
 PHP requirement constraint tidy. No API or runtime changes.

@@ -134,6 +134,29 @@ class Feature implements FeatureInterface
         return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * Serialize to the 2.x pipe-delimited format
+     * (`percentage|users|groups|requestParam|dataJson`) — the exact inverse
+     * of the legacy reader in the constructor.
+     *
+     * Intended for rollback tooling: 2.x (and opensoft/rollout) cannot read
+     * the 3.x JSON format, so storage must be downgraded before reverting an
+     * application to the older engine. See LegacyFormatConverter.
+     *
+     * Caveat inherited from the 2.x format itself: user and group
+     * identifiers containing `,` or `|` cannot be represented.
+     */
+    public function serializeLegacy(): string
+    {
+        return implode('|', [
+            (string) $this->percentage,
+            implode(',', $this->users),
+            implode(',', $this->groups),
+            $this->requestParam ?? '',
+            json_encode($this->data, JSON_THROW_ON_ERROR),
+        ]);
+    }
+
     #[\Override]
     public function addUser(RolloutUserInterface $user): void
     {
