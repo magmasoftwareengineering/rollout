@@ -25,7 +25,7 @@ Security-sensitive issues should be emailed privately to <hello@phpcodemonkey.me
 ## Setting up locally
 
 ```sh
-git clone git@bitbucket.org:magmasoftwareengineering/rollout.git
+git clone git@ssh.bitbucket.org:magmasoftwareengineering/rollout.git
 cd rollout
 composer install
 ```
